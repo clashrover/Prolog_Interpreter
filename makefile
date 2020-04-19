@@ -7,4 +7,4 @@ RUN:
 	ocamlc -c parser.ml
 	ocamlc -c main.ml
 	ocamlc -o main interpretor.cmo lexer.cmo parser.cmo main.cmo
-	./main database.txt
+	./main database.pl
