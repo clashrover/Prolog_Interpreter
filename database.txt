@@ -169,5 +169,5 @@ grandfather(M, N)	:-	male(M), child(N, O), child(O, M).
 grandmother(P, Q)	:-	female(P), child(Q, R), child(R, P).
 descendent(S, T)	:-	child(S, T).
 descendent(U, V)	:-	child(U, W), descendent(W, V).
-ancestor(Y, Z)		:-	descendent(Z, Y).
+ancestor(A, B)		:-	descendent(B, A).
 ;;
