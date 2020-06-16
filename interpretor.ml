@@ -282,7 +282,7 @@ let rec print_subs (s:substitution) =
 let rec apply_subs_on_goal (s:substitution) (g:goal): goal = 
 	let G(k) = g in
 	match k with
-	| [] 	-> G([])
+	| [] 	-> 	G([])
 	| x::xs -> 	let A(a,b) = x in
 					let l = substList b s in
 						let ans = A(a,l) in
@@ -295,7 +295,7 @@ let rec apply_subs_on_goal (s:substitution) (g:goal): goal =
 
 let rec print_mgulist (s:mgu_list) =
 	match s with
-	| [] -> ()(* print_string "mgu list printed\n" *)
+	| [] -> ()
 	| x::xs -> print_subs x; print_mgulist xs;;
 
 let rec equal_atom (x:atom) (a:atom) =
@@ -325,18 +325,6 @@ let rec checkTrue (a:atom) (p:program):bool =
 									equal_atom a x1 || checkTrue a p_new
 				| R(r)	-> 	checkTrue a p_new;;
 
-				
-
-
-
-let rec equal_atom (x:atom) (a:atom) =
-	let A(a1,b1) = x in
-		let A(a2,b2) = a in
-			if a1 = a2 then
-				if (mgulist b1 b2) = [] then true
-				else false
-		else
-			false;;
 
 let rec filter_goal (a:atom) (g:goal): goal =
 	match g with
@@ -349,7 +337,6 @@ let rec fact_solve (a:atom) (f:fact) =
 		let AF(aa) = h in
 			let A(a1,a2) = a in
 				let A(b1,b2) = aa in
-					(* print_atom a; print_string "  "; print_atom aa; print_newline(); *)
 					if a1 = b1 then
 						try
 							mgulist a2 b2
@@ -357,13 +344,8 @@ let rec fact_solve (a:atom) (f:fact) =
 					else
 						[];;
 
-(* let rec clause_solve (a:atom) (c:clause)=
-	match c with
-	| F(f)  ->	fact_solve a f
-	| R(r)	-> 	raise Not_yet;; *)
 
 let rec checkfact (a:atom) (p:program) =
-	(* let alp = print_string "in cf\n" in *)
 	let P(k) = p in
 		match k with
 		| [] 	-> true
@@ -380,27 +362,6 @@ let rec checkfact (a:atom) (p:program) =
 										let A(s2,tl2) = a in
 											if s1=s2 then false else checkfact a p1;;
 
-(* let rec get_subgoal (a:atom) (p:program):goal =
-	let P(k) = p in
-	match k with
-	| [] 	-> 	raise Not_found
-	| x::xs -> 	let p1 = P(xs) in
-				match x with
-				| F(f) -> get_subgoal a p1
-				| R(r) -> let HB(h,b) = r in
-								let AF(a1) = h in
-										let A(s1,tl1) = a1 in
-										let A(s2,tl2) = a in
-											if s1 = s2 then
-												(* let alp =print_string "here\n" in *)
-												let s = mgulist tl1 tl2 in
-													(* print_subs s; *)
-													(* let alp =print_string "here\n" in *)
-													let AFlist(bod) = b in
-														let g1 = G(bod) in
-															let g2 = apply_subs_on_goal s g1 in
-																g2;;
- *)
 
 let rec solve_fact (a:atom) (p:program): mgu_list = 
 	let P(k) = p in
@@ -426,17 +387,12 @@ and solve_rule (g:goal) (p:program) (ans:mgu_list) (tvalue: bool) (a:atom) (p_co
 										let A(s1,tl1) = a1 in
 										let A(s2,tl2) = a in
 											if s1 = s2 then
-												(* let alp =print_string "here\n" in *)
 												let s = mgulist tl1 tl2 in
-													(* print_subs s; *)
-													(* let alp =print_string "here\n" in *)
 													let AFlist(bod) = b in
 														let g1 = G(bod) in
 															let G(k2) = apply_subs_on_goal s g1 in
-																(* print_goals (apply_subs_on_goal s g1); *)
 																let G(k3) = g in
 																	let g_new = G(k2@k3) in
-																		(* print_goals g_new; *)
 																		resolve g_new p_comp ans tvalue;
 																		solve_rule g p1 ans tvalue a p_comp
 											else
@@ -449,17 +405,22 @@ and recurse_mgulist (s:mgu_list) (g:goal) (p:program) (ans:mgu_list) (tvalue:boo
 	match s with
 	| [] 	->	()	
 	| x::xs ->	let g1 = apply_subs_on_goal x g in
-				(* print_goals g1; *)
 				let ans2 = x::ans in
 				let tvalue2 = tvalue && true in
 				resolve g1 p ans2 tvalue2;
 				recurse_mgulist xs g p ans tvalue
 
 and resolve (g:goal) (p:program) (ans:mgu_list) (tvalue: bool) = 
-	(* let alp = print_goals g in *)
 	let G(k) = g in
 	match k with
-	| [] 	-> 	if tvalue then let alp = print_mgulist ans in print_string "true\n"
+	| [] 	-> 	if tvalue then 
+						let alp = print_mgulist ans in 
+							let alp2 = print_string "true\n" in
+								let alp = read_line() in
+									if alp = ";" then ()
+									else
+										if alp = "." then exit 0
+										else ()
 				else ()
 	| x::xs -> 	if checkfact x p then
 					if hasVars x then
@@ -474,55 +435,7 @@ and resolve (g:goal) (p:program) (ans:mgu_list) (tvalue: bool) =
 							let g2 = G([]) in
 								resolve g2 p [] false
 				else
-					(* if hasVars x in *)
-						let g2 = G(xs) in
-							solve_rule g2 p ans tvalue x p
-					(* else
-						let sg = get_subgoal x p in
-							if checkVarsInGoal sg then
-								let g2 = G(xs) in
-								solve_rule g2 p ans tvalue x p
-							else
-								if checkTrueList x p then
-									let g2 = G(xs) in
-										resolve g2 p ans (tvalue && true)
-								else
-									let g2 = G([]) in
-									resolve g2 p [] false *)
+					let g2 = G(xs) in
+						solve_rule g2 p ans tvalue x p
 
 ;;
-
-(* let rec get_subgoal (a:atom) (p:program):goal =
-	let P(k) = p in
-	match k with
-	| [] 	-> 	G([])
-	| x::xs ->	let p1 = P(xs) in
-					match x with
-					| F(f) 	->	get_subgoal a p1 
-					| R(r) 	-> 	let HB(head,body) = r in
-									let AF(a2) = head in
-										let A(s1,tl1) =a in
-											let A(s2,tl2) = a2 in
-												if s1 = s2 then
-													let s = mgulist tl2 tl1 in
-														let AFlist(bod) = body in 
-															let g4 = G(bod) in
-																let g5 = replace_rules g4 p in
-																	apply_subs_on_goal s g5
-												else
-													get_subgoal a p1 *)
-
-(* and replace_rules (g:goal) (p:program):goal =
-	let G(k) = g in
-	match k with
-	| [] 	-> 	G([])
-	| x::xs -> 	let g1 = get_subgoal x p in
-					if g1 = G([]) then
-						let g2 = G(xs) in
-							let G(k2) = replace_rules g2 p in
-								let g3 = G(x::k2) in g3
-					else
-						let g2 = G(xs) in
-							let G(k2) = replace_rules g2 p in
-								let G(k3) = g1 in
-									let g3 = G(k3@k2) in g3;; *)

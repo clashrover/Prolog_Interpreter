@@ -1,0 +1,252 @@
+Assignment 6 COL226
+By Sagar Sharma 2018CS10378
+
+-------------------------------Interpretor.ml-----------------------------------------------------------
+
+NOTE: 	I have implemented AND functionality as it serves the function of creating unification engine 
+		and back tracking.
+
+print_subs (s:substitution) => simple function to print substitution
+
+apply_subs_on_goal (s:substitution) (g:goal): goal =>
+	apply s on each term one by one, replace the prev atom with updated atom	
+
+
+print_mgulist (s:mgu_list) =
+	print each mgu in the list
+
+equal_atom (x:atom) (a:atom) =
+	to check if two atom are equal first match their symbol predicate
+	if they match then call mgulist on their term list.
+	if a non unfiable occur then return false
+	else
+		if return mgu is empty then true as they are equal
+		else false.
+
+
+hasVars (a:atom):bool = 
+	call varslist on term list of atom, if it is empty then false else true
+
+
+checkTrue (a:atom) (p:program):bool =
+	this function tells if an the atom given matches with a fact in the database, if yes then true else false
+
+
+filter_goal (a:atom) (g:goal): goal =
+	it is used to remove the atom from given goal. Not used
+
+
+fact_solve (a:atom) (f:fact) = 
+	match the predicate, if they match then call mgu list on their term list.
+	If they don't match or non unifiable then return an empty list.
+
+
+solve_fact (a:atom) (p:program): mgu_list =
+	this and next 4 function are in circle. Calling one another for different cases.
+	In this we get list of mgu's after matching atom with all the facts present in the program database.
+
+
+and solve_rule (g:goal) (p:program) (ans:mgu_list) (tvalue: bool) (a:atom) (p_comp:program) =
+	1.	The most important function.
+	2.	Solving a rule is different. 
+	3.	I call resolve function by appending the rest of the remaining goal with the body of the rule.
+		I have done substition on the body, this way the new goal contains substituted facts
+		solving which is easy.
+	4.	If a rule contains a rule, that is handled as well by calling resolve.
+	5.	But as there can be more than one rule with same head. I again call solve_rule so
+		that i can match the same goal with another rule given. This way I can give all
+		possible solutions.
+	6. I used mgu list to apply substitions.
+
+
+and recurse_mgulist (s:mgu_list) (g:goal) (p:program) (ans:mgu_list) (tvalue:bool)= 
+	apply different mgus on remaining goals and after each time applying call resolve
+	This way I can go through all possible substitutions.
+
+
+and resolve (g:goal) (p:program) (ans:mgu_list) (tvalue: bool) = 
+	1. 	Second most important function
+	2. 	If all goals are solved then print sollution and ask for ; to continue with finding 
+		another solution.
+	3.	First take a goal,
+		Check if it matches with a rule or a fact.
+		1.	If with a fact
+				1. 	check if it has variables, call solve on the goal, 
+					and then recurse through all the substitutions you got.
+				2. 	if no variable, then call check true on it.
+		2.	If a rule then call solve_rule on it, which will call resolve with modified goal list.
+
+
+-------------------------------Main.ml-----------------------------------------------------------
+I have used two start tokens in parser which i use in main.ml one is for goal, another is for program.
+Rest all is obvious.
+
+-------------------------------Parser.ml-----------------------------------------------------------
+All the tokens are obvious according to given specification. Due to functionality issues I had 
+to create an end token ;; . In the database one provides and end token should be there.
+Identifier begin with small case letters, Variables with upper case letters.
+
+
+
+
+
+
+---------------------------------ASSIGNMENT 5 DOC--------------------------------------------------------
+
+- "variable" and "symbol" are defined as strings
+- "term" is define as V of variable or Node of (symbol,(term list))
+
+- "substitution" is defined as (variable,term) list
+
+(* -------------------------------------------------------------------------------------------------- *)
+(* ---------------------------------Well formed signature checking---------------------------------------- *)
+
+check_arity (x:pair): bool =
+  check if arity is negative.
+
+check_dup (p:pair) (s:signature) (occurance:int) : bool =
+  icheck if a sybol has occured more than once in signature
+
+check_sig (s:signature) (temp:signature) : bool = 
+  recurse on elements of temp and calling above functions for its each element 
+
+(* -------------------------------------------------------------------------------------------------- *)
+(* ---------------------------------Well formed term checking---------------------------------------- *)
+
+arity (sym:symbol) (s:signature):int =
+	recurse on elements of signature to get arity of symbol given.
+    time complexity O(n) where n is size of signature list.
+
+
+length (l:term list) (ans:int):int =
+	obvious function
+
+wfterm (t:term) : bool = 
+  Divide it into cases
+  - if t is variable then true
+  - if t is a node then check arity of the symbol and size of its term list, if they are equal then recurse on termlist
+    to check if each of its term is well formed.
+  - if t is something else then call exception
+
+and wflist (s:term list):bool = 
+  recurse on element of term list and call wfterm on each of its elements.
+
+(* -------------------------------------------------------------------------------------------------- *)
+(* --------------------------------------Height------------------------------------------------------ *)
+
+ht (t:term): int =
+	Break into cases.
+    - if t is variable then it is a leaf with height 1. This convention is convenient to me.
+    - if t is a node then its height is 1+ max of heights of terms in its term list. call htlist on this list to get that/
+
+and htlist (l:term list) (ans:int):int =
+	recurse on elements of l and call ht on each element. Maintain ans which is max of heghts we have calculated 
+    till the current iteration.
+
+(* -------------------------------------------------------------------------------------------------- *)
+(* ----------------------------------------Size------------------------------------------------------ *)
+
+size (t:term) :int =
+	if t is variable then size is 1
+    if t is Node then its size is 1+ sum of size of its element of term list. call sizelist for that.
+
+and sizelist (l:term list) (ans:int):int =
+	recurse on l and keep sum of height of elements in ans.
+
+(* -------------------------------------------------------------------------------------------------- *)
+(* ------------------------------------------Forming Var set----------------------------------------- *)
+
+filter (x:variable) (lp:variable list) : variable list = 
+	it will remove all the occurance of x in lp.
+
+removeDup (lp:variable list) (lp_temp:variable list): variable list = 
+	In this we traverse elements of lp_temp filter out the duplicates from lp, and recall the function.
+    at the end we will have lp without duplicates.
+
+vars (e:term) (l:variable list) : variable list = 
+    break into cases.
+    if e is a variable then remove duplicates for till formed lp and return this lp
+    if e is a node then form a complete list of variables extracted form its term list and call removeDup on it.
+
+and varslist (e:term list) : variable list =
+	for each element call vars and concatnate.
+
+(* -------------------------------------------------------------------------------------------------- *)
+(* ---------------------------Apply given substitution on given term--------------------------------- *)
+
+
+makeSubst (x:variable) (s:substitution) =
+    find the variable in s and return the term associated with it.
+
+subst (t:term) (s:substitution): term =
+	break into cases
+	if it is a variable do the subst rightaway by calling makeSubst
+	if it is a node then call makeSubst on each of the term of its term list. do that by calling substList
+
+and substList (l:term list) (s:substitution): term list =
+	traverse on l calling subst on each of its elements and returning final substituted term list.
+
+
+(* -------------------------------------------------------------------------------------------------- *)
+(* ----------------------------------Composition of two substitutions-------------------------------- *)
+
+applyOnS1 (s1:substitution) (s2:substitution) : substitution =
+	apply s2 on each term associated with each variable in s1 by traversing through each element of s1
+
+findXinSubs (x:variable) (l:substitution) : bool = 
+	return true if x is present in l. 
+
+deletefrom (s2:substitution ) (l:substitution):substitution =
+	deleting all variables in s2 that are present in l.
+
+deleteident (l:substitution) =
+	filter out all identity substitutions
+
+composition (s1:substitution) (s2:substitution) : substitution =
+	first apply s2 on s1's terms. 
+		then delete those terms from s2 whose variable is present in the previous outcome.
+			then delete all identity substitutions and thus we get composition.
+
+
+(* -------------------------------------------------------------------------------------------------- *)
+(* ---------------------------Find mgu for two terms which is a substitution------------------------- *)
+
+
+
+
+findXinVars (s:variable list) (x:variable) : bool =
+	check if you can find x in s.
+
+checkVarsf (x:variable) (l:term list): bool =
+	to check if x is present in any of the terms of l.
+
+mgu (t1:term) (t2:term): substitution = 
+	break into cases
+	if t1 is variable
+		if t2 is variable then check if x=y then no substitution is needed else x|->y
+		if t2 is node the check if x is present in the term list if yes then non Not_Unifiable else x|->t2
+	
+	if t1 is node then 
+		if t2 is variable then check if t2 is present in term list of t1 if yes then Not_Unifiable else y|->t1
+		if t2 is node then check if symbol t1 = symbol t2 if no then Not_Unifiable else check arities are same then call mgulist
+		with termlists of both as arguments.
+
+and mgulist (l1:term list) (l2:term list): substitution = 
+	this function will return a substitution for whole l1 and l2 that are term list.
+	just find the substitution of each term apply it on rest of the terms and then repeat. 
+	keep concatnating the substitutions.
+
+	here please note that no identity substitution will be there neither any variable will have more than 
+	one substitution as its substitution is applied on rest of the trees. 
+	the function gives a valid mgu that is you can't unify with smaller than that. That is why didn't need to call
+	composition function.
+	also I have followed guidelines from class notes. And the symbols are not commutative.
+
+	break into cases
+	if l1 is empty then no substitution
+	else
+		if l2 is empty then no substitution
+		else
+			find the mgu of the two corresponding terms.
+			apply it on both the remaining term list.
+			call mgulist on these newly substituted lists. keep concatnating the answers.

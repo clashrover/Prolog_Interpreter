@@ -206,4 +206,3 @@ stepbrother(A,B) :- male(A), stepsibling(A,B).
 stepsister(A,B) :- female(A), stepsibling(A,B).
 ancestor(A,B) :- parent(A,B).
 ancestor(A,B) :- parent(A,M), ancestor(M,B).
-;;
